@@ -42,6 +42,19 @@ The schema is created lazily on first request via `ensureSchema()` in `src/lib/d
 3. Run the same offline experiment yourself to populate baselines (use the helper scripts in the `concept-bridge` repo).
 4. No DB migration needed — the existing table handles any `experiment_id`.
 
+## Abuse / cost protection
+
+The app makes ~10 Groq API calls per submission, so cost runaway and bot abuse are real concerns. Layered defenses:
+
+| Layer | Defense |
+|---|---|
+| **Diversity gaming** | Server-side Jaccard similarity check on lowercased non-stopword tokens. If an answer is ≥ 50% similar to any earlier non-skipped non-duplicate answer, it's flagged as duplicate, **the Groq call is skipped**, and it scores 0/10. Catches the "crocodile gastrolith → alligator gastrolith" pattern. |
+| **Daily cap** | `MAX_SUBMISSIONS_PER_24H` env var, default 500. Server returns HTTP 429 once exceeded. Hard wall against runaway. |
+| **Bots** | Honeypot field (CSS-hidden `<input>` named `website`). Real users never see it; bots that auto-fill all fields trigger silent rejection. |
+| **Cloud Run** | `max-instances=5`, `memory=512Mi`, `cpu=1`. Caps total parallel compute regardless of inbound traffic. |
+| **Body size** | Form caps each answer at 300 chars; server hard-caps at 600 before the judge call. |
+| **Prompt injection** | User text is wrapped with `<USE>...</USE>` tags + control-char stripping + fence-breaker neutralization. The judge's system prompt instructs it to treat input inside tags as untrusted. Worst-case attacker scores themselves 10/10 on gibberish — they can't exfiltrate data (judge has no tools / no DB access). |
+
 ## Privacy
 
 **Nothing personal is tracked or stored.** Privacy is by design — the database schema literally has no columns for IP, user-agent, session, or any fingerprint. The only things the app persists per submission:

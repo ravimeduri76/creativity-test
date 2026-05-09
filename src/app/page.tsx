@@ -11,6 +11,7 @@ export default function Home() {
   );
   const [displayName, setDisplayName] = useState("");
   const [optInShare, setOptInShare] = useState(true);
+  const [website, setWebsite] = useState(""); // honeypot — never visible to humans
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function Home() {
           answers,
           displayName,
           optInShare,
+          website, // honeypot
         }),
       });
       if (!r.ok) {
@@ -147,6 +149,21 @@ export default function Home() {
           </span>
         </label>
       </section>
+
+      {/* Honeypot — invisible to real users, off-screen via CSS.
+          Bots that fill all form fields will populate it; the server
+          rejects any submission with this field non-empty. */}
+      <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", height: 0, overflow: "hidden" }}>
+        <label htmlFor="website-hp">If you are human, leave this field empty:</label>
+        <input
+          id="website-hp"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={(e) => setWebsite(e.target.value)}
+        />
+      </div>
 
       {/* Submit */}
       <section className="flex items-center justify-between">

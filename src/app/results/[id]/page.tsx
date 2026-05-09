@@ -102,14 +102,19 @@ function ComparisonCard({ label, value, accent = false }: { label: string; value
 function AnswerCard({ index, answer }: { index: number; answer: AnswerRecord }) {
   const cr = answer.judge?.creativity ?? 0;
   const violation = answer.judge?.constraint_violation;
-  const violationFlag = violation && violation !== "none" ? violation : null;
+  const isDup = answer.isDuplicate;
+  const violationFlag = violation && violation !== "none" && violation !== "duplicate" ? violation : null;
   return (
-    <div className="rounded-md border border-slate-200 bg-white p-3">
+    <div className={"rounded-md border p-3 " + (isDup ? "border-amber/40 bg-amber/5" : "border-slate-200 bg-white")}>
       <div className="flex items-center justify-between text-xs text-slate-500">
         <span className="font-mono">Answer {index}</span>
         <span className="flex items-center gap-2">
           {answer.skipped ? (
             <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-500">skipped (0/10)</span>
+          ) : isDup ? (
+            <span className="rounded bg-amber/20 px-2 py-0.5 text-xs text-amber">
+              duplicate of #{(answer.duplicateOf ?? 0) + 1} · 0/10
+            </span>
           ) : (
             <>
               <span

@@ -51,6 +51,23 @@ export interface AnswerRecord {
   text: string | null;
   skipped: boolean;
   judge: AnswerJudge | null;
+  isDuplicate?: boolean;
+  duplicateOf?: number | null;
+}
+
+/**
+ * Daily-submission counter for cost / abuse protection.
+ * Returns the count of submissions inserted in the trailing 24h window.
+ */
+export async function countSubmissionsLast24h(): Promise<number> {
+  await ensureSchema();
+  const sql = getSQL();
+  const rows = (await sql`
+    SELECT COUNT(*)::int AS n
+    FROM creativity_submissions
+    WHERE created_at >= NOW() - INTERVAL '24 hours'
+  `) as Array<{ n: number }>;
+  return rows[0]?.n ?? 0;
 }
 
 export interface InsertSubmissionInput {
