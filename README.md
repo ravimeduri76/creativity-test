@@ -44,9 +44,15 @@ The schema is created lazily on first request via `ensureSchema()` in `src/lib/d
 
 ## Privacy
 
-- Submissions are anonymous unless the user supplies a display name.
-- No raw IP stored — only `sha256(ip + monthly_salt)` truncated, used for de-dup only.
-- `opt_in_share` controls whether answers may be referenced (anonymized) in future analyses.
+**Nothing personal is tracked or stored.** Privacy is by design — the database schema literally has no columns for IP, user-agent, session, or any fingerprint. The only things the app persists per submission:
+
+- the 10 answer texts (or the skip flag)
+- the judge's per-answer scores and reasoning
+- an optional `display_name` if the user chose to type one
+- the `opt_in_share` flag (governs whether answers may be referenced, anonymized, in future analyses)
+- a server-generated UUID and timestamp
+
+No cookies, no analytics, no third-party trackers. The judge call goes to Groq with only the answer text — no metadata.
 
 ## License
 

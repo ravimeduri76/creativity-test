@@ -51,6 +51,16 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
+      {/* Privacy notice — visible above the fold */}
+      <section className="rounded-md border border-good/30 bg-good/5 p-4">
+        <p className="text-sm text-slate-700">
+          <strong className="text-good">Nothing personal is tracked or stored.</strong>{" "}
+          We persist only your answers, the judge&rsquo;s scores, and an optional display name
+          you choose to type. <strong>No IP, no user-agent, no session, no cookies.</strong>{" "}
+          Submissions are anonymous by default.
+        </p>
+      </section>
+
       {/* Experiment picker */}
       <section>
         <label className="mb-2 block text-xs font-mono uppercase tracking-wider text-slate-600">

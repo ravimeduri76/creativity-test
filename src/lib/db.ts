@@ -15,6 +15,11 @@ export function getSQL() {
 export async function ensureSchema() {
   if (schemaReady) return;
   const sql = getSQL();
+  // Privacy by design: no IP, no user-agent, no fingerprint columns.
+  // The only things we persist are the answers, the judge's scores,
+  // an optional display name the user chose to type, and the opt-in
+  // flag governing whether answers may be referenced (anonymized) in
+  // future analyses.
   await sql`
     CREATE TABLE IF NOT EXISTS creativity_submissions (
       id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -25,18 +30,12 @@ export async function ensureSchema() {
       skip_count      INTEGER      NOT NULL,
       display_name    TEXT,
       opt_in_share    BOOLEAN      NOT NULL DEFAULT FALSE,
-      ip_hash         TEXT,
-      user_agent      TEXT,
       created_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
     )
   `;
   await sql`
     CREATE INDEX IF NOT EXISTS idx_creativity_submissions_experiment
     ON creativity_submissions(experiment_id, created_at DESC)
-  `;
-  await sql`
-    CREATE INDEX IF NOT EXISTS idx_creativity_submissions_ip_hash
-    ON creativity_submissions(ip_hash, created_at DESC)
   `;
   schemaReady = true;
 }
@@ -62,8 +61,6 @@ export interface InsertSubmissionInput {
   skipCount: number;
   displayName: string | null;
   optInShare: boolean;
-  ipHash: string | null;
-  userAgent: string | null;
 }
 
 export async function insertSubmission(input: InsertSubmissionInput): Promise<string> {
@@ -72,11 +69,11 @@ export async function insertSubmission(input: InsertSubmissionInput): Promise<st
   const rows = (await sql`
     INSERT INTO creativity_submissions
       (experiment_id, answers, total_score, mean_creativity, skip_count,
-       display_name, opt_in_share, ip_hash, user_agent)
+       display_name, opt_in_share)
     VALUES
       (${input.experimentId}, ${JSON.stringify(input.answers)}::jsonb,
        ${input.totalScore}, ${input.meanCreativity}, ${input.skipCount},
-       ${input.displayName}, ${input.optInShare}, ${input.ipHash}, ${input.userAgent})
+       ${input.displayName}, ${input.optInShare})
     RETURNING id
   `) as Array<{ id: string }>;
   return rows[0].id;

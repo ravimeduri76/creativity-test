@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "node:crypto";
 import { getExperiment } from "@/lib/experiments";
 import { judgeAnswer } from "@/lib/groq";
 import { insertSubmission, type AnswerRecord } from "@/lib/db";
@@ -49,13 +48,10 @@ export async function POST(req: NextRequest) {
     ? Number((answered.reduce((s, a) => s + (a.judge?.creativity ?? 0), 0) / answered.length).toFixed(2))
     : 0;
 
-  // De-identified IP (sha256(ip + monthly salt) — enough for de-dup, not for re-identification).
-  const ipRaw =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") || "";
-  const salt = process.env.IP_HASH_SALT || "creativity-test-default-salt";
-  const ipHash = ipRaw ? createHash("sha256").update(ipRaw + salt).digest("hex").slice(0, 32) : null;
-
+  // Privacy by design: we deliberately do NOT capture IP, user-agent,
+  // session, or any fingerprint. The DB schema doesn't even have columns
+  // for them. The only things stored: the answers, the judge's scores,
+  // an optional display name, and the opt-in flag.
   const id = await insertSubmission({
     experimentId: exp.id,
     answers: judgings,
@@ -64,8 +60,6 @@ export async function POST(req: NextRequest) {
     skipCount,
     displayName: body.displayName?.trim() || null,
     optInShare: !!body.optInShare,
-    ipHash,
-    userAgent: req.headers.get("user-agent")?.slice(0, 200) || null,
   });
 
   return NextResponse.json({
